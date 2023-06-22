@@ -59,11 +59,12 @@ function generateEncoded()
   --[[ Partition of Equations 
        - Public Information:
          - List of 1000 equations with Errors
-         - All results in the RHS of the "=" are values modulus 257
-       - Bob selects a random partition of equations(5 in this example)
-       - Sum up the 5 equations to formulate a new Equation
-    ]]
-  print("\nIndex Selection for Character #" .. i)
+         - All results in the RHS of the "=" are Sums with offset modulus large prime
+       - Select a random partition of equations(5 in this example)
+       - Sum up the 5 equations to formulate a new combined Equation
+  ]]
+  
+  print("\nLinear Equation Selection for Character #" .. i)
   print("Equation 1 : " .. sysEq[i1][1] .. "v + " .. sysEq[i1][2] .."x + " ..
         sysEq[i1][3] .. "y + " .. sysEq[i1][4] .. "z = " .. (sysEq[i1][5] % modVal))
   print("Equation 2 : " .. sysEq[i2][1] .. "v + " .. sysEq[i2][2] .."x + " ..
@@ -80,15 +81,14 @@ function generateEncoded()
       
   --[[ Encoding:
        - Partition modulus value 257 into 26 parts
-       - 257 // 26 = 9
+       - For example, prime 257 =>  257 // 26 = 9
        - Each alphabet letter can correspond to a number 1 - 26
        - For example, adding a "c" can be done w/ 3 * 9 = 27 
          added to the combined equation right side of the equal 
   ]]
-    tempfoo = ((msg[i] * alphsize) + tempval) % modVal
-    msg2[i] = {foo[1],foo[2],foo[3],foo[4],tempfoo}
+  summfoo = ((msg[i] * alphsize) + tempval) % modVal
+  msg2[i] = {foo[1],foo[2],foo[3],foo[4],summfoo}
   end
-
 end
 
 
@@ -101,7 +101,7 @@ function decodeMessage()
   ]]
   local accValList = {}
   
-  --Calculate accurateValues using returned partition of system of equations w/ errors
+  --Calculate accurate values using privatekey
   for i = 1, #msg2
   do
     local accVal = ((msg2[i][1] * privatekey[1]) + (msg2[i][2] * privatekey[2]) +
@@ -109,7 +109,7 @@ function decodeMessage()
     table.insert(accValList, accVal)
   end
   
-  --Calculate Message by Subtracting Error Summation by Actual Value
+  --Calculate Message by Subtracting Error Summation by accurate values
   print("")
   for i = 1, #msg2
   do
@@ -121,8 +121,8 @@ function decodeMessage()
     end
 
     print("Value #"..i)
-    print("Encoded Message w/ Error", encErr / alphsize)
-    print("Decoded Value: ".. encErr // alphsize,"\n")
+    print("Decoded Message w/ Error", encErr / alphsize)
+    print("Correct Decoded Value: ".. encErr // alphsize,"\n")
   end
   
 end
