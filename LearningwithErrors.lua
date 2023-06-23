@@ -118,15 +118,6 @@ end
 ]]
 local privatekey = {3, -9, 34, -47}
 
---[[ Changeable Values for Public Info
-     - public_eq_list: Public Table for system of equations
-     
-     - Alphabet Size: Size of the Alphabet(A-Z = 26 characters)
-     - Offset Value: Possible distance of error, must follow restrictions below:
-       - Offset < [(alphsize) / (Variable number)]
-       - 4 < [(523 / 26) / 4 ]   =>   4 < 5.02
-]]
-
 local modVal = 523
 local charamt = 26
 local alphdist = modVal // charamt  
