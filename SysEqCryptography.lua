@@ -1,135 +1,149 @@
 math.randomseed( os.time() )
 
--- Private Key: Values for Variables(V,X,Y,Z)
--- Any set of integer values
-local privatekey = {3, -9, 34, -47}
-
---[[ Changeable Values for Public Key 
-     - sysEq: Table for system of equations
-     - modVal: Prime number for Modular Calculations
-     - Alphabet Size: Size of the Alphabet(A-Z = 26 characters)
-     - Offset Value: Possible distance of error
-       - Offset < [(alphsize) / (Variable number)]
-       - 4 < [(523 / 26) / 4 ]   =>   4 < 5.02
-]]
-local sysEq = {}
-local modVal = 523
-local alphsize = modVal // 26
-local offsetVal = 4
-
--- original msg -> HELLOWORLD
--- msg2: returned equation after encoding
-local msg = {8,5,12,12,15,23,15,18,12,4}
-local msg2 = {}
-
+-- Libary-less Table Dump from StackOverflow
+-- https://stackoverflow.com/a/27028488
+local function dump(o)
+  if type(o) == 'table' then
+     local s = '{ '
+     for k,v in pairs(o) do
+        if type(k) ~= 'number' then k = '"'..k..'"' end
+        s = s .. '\n['..k..'] = ' .. dump(v) .. ','
+     end
+     return s .. '} '
+  else
+     return tostring(o)
+  end
+end
 
 -- Generates Public key(List of linear equations)
-function generateLists()
-  for i = 1,1000
-  do
+-- Takes in the private_key to generate the lists
+local function generateLists(private_key, mod_val, offset_Val)
+  local templist = {}
+  for i = 1,1000 do
     -- Eq V + X + Y + Z
-    local foo = {math.random(100),math.random(100),math.random(100),math.random(100)}
+    local foo = {math.random(10000),math.random(10000),math.random(10000),math.random(10000)}
     -- Summation + Error mod 257
-    local summ = ( (foo[1] * privatekey[1]) + (foo[2] * privatekey[2])
-                  + (foo[3] * privatekey[3]) + (foo[4] * privatekey[4])
-                  + math.random(offsetVal) ) % modVal
+    local summ = ( (foo[1] * private_key[1]) + (foo[2] * private_key[2])
+                  + (foo[3] * private_key[3]) + (foo[4] * private_key[4])
+                  + math.random(offset_Val) ) % mod_val
 
-    sysEq[i] = {foo[1],foo[2],foo[3],foo[4],summ} 
+    templist[i] = {foo[1],foo[2],foo[3],foo[4],summ} 
   end
+  
+  return templist
 end
 
 
 -- Encodes the Message using random partition selections of Public Key
-function generateEncoded()
-  for i = 1, #msg
-  do
-    --Select 5 random linear equations to combine
-    local i1 = math.random(200)
-    local i2 = math.random(201,400)
-    local i3 = math.random(401,600)
-    local i4 = math.random(601,800)
-    local i5 = math.random(801,1000)
-    
-    --Calculations for combined equations
-    local foo = {sysEq[i1][1] + sysEq[i2][1] + sysEq[i3][1] + sysEq[i4][1] + sysEq[i5][1],
-                sysEq[i1][2] + sysEq[i2][2] + sysEq[i3][2] + sysEq[i4][2] + sysEq[i5][2],
-                sysEq[i1][3] + sysEq[i2][3] + sysEq[i3][3] + sysEq[i4][3] + sysEq[i5][3],
-                sysEq[i1][4] + sysEq[i2][4] + sysEq[i3][4] + sysEq[i4][4] + sysEq[i5][4]
-    }
-    local tempval = ((sysEq[i1][5] + sysEq[i2][5] + sysEq[i3][5] + sysEq[i4][5] + sysEq[i5][5]) % modVal)
-    
+-- Takes in the public key, mod_val, message and returns an encoded message
+function generateEncoded(public_key, mod_val, alph_size, msgobj)
+  local templist = {}
+  for i = 1, #msgobj do
     --[[ Partition of Equations 
-        - Public Information:
-          - List of 1000 equations with Errors
-          - All results in the RHS of the "=" are values modulus 257
-        - Bob selects a random partition of equations(5 in this example)
+        - Select a random partition of equations(5 in this example)
         - Sum up the 5 equations to formulate a new Equation
-    ]]
-    print("\nIndex Selection for Character #" .. i)
-    print("Equation 1 : " .. sysEq[i1][1] .. "v + " .. sysEq[i1][2] .."x + " ..
-          sysEq[i1][3] .. "y + " .. sysEq[i1][4] .. "z = " .. (sysEq[i1][5] % modVal))
-    print("Equation 2 : " .. sysEq[i2][1] .. "v + " .. sysEq[i2][2] .."x + " ..
-          sysEq[i2][3] .. "y + " .. sysEq[i2][4] .. "z = " .. (sysEq[i2][5] % modVal))
-    print("Equation 3 : " .. sysEq[i3][1] .. "v + " .. sysEq[i3][2] .."x + " ..
-          sysEq[i3][3] .. "y + " .. sysEq[i3][4] .. "z = " .. (sysEq[i3][5] % modVal))
-    print("Equation 4 : " .. sysEq[i4][1] .. "v + " .. sysEq[i4][2] .."x + " ..
-          sysEq[i4][3] .. "y + " .. sysEq[i4][4] .. "z = " .. (sysEq[i4][5] % modVal))
-    print("Equation 5 : " .. sysEq[i5][1] .. "v + " .. sysEq[i5][2] .."x + " ..
-          sysEq[i5][3] .. "y + " .. sysEq[i5][4] .. "z = " .. (sysEq[i5][5] % modVal))
+    ]]       
+    local i1,i2,i3,i4,i5 = math.random(1000), math.random(1000), math.random(1000),
+                           math.random(1000), math.random(1000)
+ 
+    --Calculations for combined equations
+    local comb_eq = {public_key[i1][1] + public_key[i2][1] + public_key[i3][1] + public_key[i4][1] + public_key[i5][1],
+                 public_key[i1][2] + public_key[i2][2] + public_key[i3][2] + public_key[i4][2] + public_key[i5][2],
+                 public_key[i1][3] + public_key[i2][3] + public_key[i3][3] + public_key[i4][3] + public_key[i5][3],
+                 public_key[i1][4] + public_key[i2][4] + public_key[i3][4] + public_key[i4][4] + public_key[i5][4]
+    }
+
+    local comb_eq_summ = ((public_key[i1][5] + public_key[i2][5] + public_key[i3][5] + public_key[i4][5] + public_key[i5][5]) % mod_val)
     
-    print("\nEquation Combined : " .. foo[1] .. "v + " .. foo[2] .. "x + " .. foo[3] ..
-          "y + " .. foo[4] .. "z = " .. tempval)
-        
     --[[ Encoding:
-        - Partition modulus value 257 into 26 parts
-        - 257 // 26 = 9
-        - Each alphabet letter can correspond to a number 1 - 26
-        - For example, adding a "c" can be done w/ 3 * 9 = 27 
-          added to the combined equation right side of the equal 
+        - Calculate distance by dividing modVal by size of alphabet
+        - Take the message and multiply its index location by distance
+        - Then, add to combined equation sum and modulus again
     ]]
-    summfoo = ((msg[i] * alphsize) + tempval) % modVal
-    msg2[i] = {foo[1],foo[2],foo[3],foo[4],summfoo}
+    comb_eq_res = ((msgobj[i] * alph_size) + comb_eq_summ) % mod_val
+    templist[i] = {comb_eq[1],comb_eq[2],comb_eq[3],comb_eq[4],comb_eq_res}
   end
+
+  return templist
 end
 
 
 -- Decode message using private key to remove offset and retreive msg values
-function decodeMessage()
+-- Takes in the Encoded Message(system of equations), returns decoded message
+function decodeMessage(enc_msg, private_key, mod_val, alph_size)
   --[[ Decoding:
        - Private Key can be used to calculate actual expected values
        - Subtract Error Sums with Actual expected sums to get encErr
-       - encErr contains both the message plus the error amount
-       - offset < distance so offset will be less than 1
-       - Integer division of the encErr by 9 gets the actual value
-
+       - encErr contains distance + error amount
   ]]
-  --Calculate list accurateValues using private key plugged into encoded equation
-  local accValList = {}
-  for i = 1, #msg2
-  do
-    local accVal = ((msg2[i][1] * privatekey[1]) + (msg2[i][2] * privatekey[2]) +
-                   (msg2[i][3] * privatekey[3]) + (msg2[i][4] * privatekey[4]) ) % modVal
-    table.insert(accValList, accVal)
-  end
+
+  local templist = {} 
+  --For visualizing Error amount
+  local templist2 = {}
   
-  --Calculate Message+Distance by Subtracting Error Summation by Actual Value
-  print("")
-  for i = 1, #msg2
-  do
-    local encErr = msg2[i][5] - accValList[i]
+  -- Combined Error Result - Expected Value = Distance + Offset
+  -- Offset < 1 by the way we picked, integer division removes the offset
+  for i = 1, #enc_msg do
+    local accVal = ((enc_msg[i][1] * private_key[1]) + (enc_msg[i][2] * private_key[2]) +
+                    (enc_msg[i][3] * private_key[3]) + (enc_msg[i][4] * private_key[4]) ) % mod_val
+
+    local encErr = enc_msg[i][5] - accVal
 
     --If negative, find positive reciprocal in modulus
-    if encErr < 0
-    then
-      encErr = encErr + modVal
+    if encErr < 0 then
+      encErr = encErr + mod_val
     end
 
-    print("Value #"..i)
-    print("Encoded Message w/ Error", encErr / alphsize)
-    print("Decoded Value: ".. encErr // alphsize,"\n")
+    templist[i] = encErr // alph_size
+    templist2[i] = encErr /alph_size
   end
+
+  return templist, templist2
 end
 
-generateLists()
-generateEncoded()
-decodeMessage()
+
+--[[Variable Definition:
+    - Private Info
+      - privatekey: Key that solves for the equation list before offset
+      - offsetVal: Error that is added into the public_eq_list
+        - MUST follow these rules:
+          - Offset < [(alphsize) / (Variable number)]
+
+    - Public Info
+      - public_eq_list: List of 1000 equations with randomized offsets
+      - modVal: Large prime number for Modular Calculations
+      - charamt: The number of unique characters for alphabet
+      - alphsize: distance calculation for modVal divided into charamt parts,
+                  used in calculating offset
+]]
+local privatekey = {3, -9, 34, -47}
+
+--[[ Changeable Values for Public Info
+     - public_eq_list: Public Table for system of equations
+     
+     - Alphabet Size: Size of the Alphabet(A-Z = 26 characters)
+     - Offset Value: Possible distance of error, must follow restrictions below:
+       - Offset < [(alphsize) / (Variable number)]
+       - 4 < [(523 / 26) / 4 ]   =>   4 < 5.02
+]]
+
+local modVal = 523
+local charamt = 26
+local alphdist = modVal // charamt  
+local offsetVal = 4
+local public_eq_list = generateLists(privatekey, modVal, offsetVal)
+
+-- original msg -> HELLOWORLD
+-- msg2: returned equation after encoding
+-- msg3: Completely Decoded without Error
+-- msg4: Decoded with Error
+local msg = {8,5,12,12,15,23,15,18,12,4}
+local msg2, msg3, msg4 = {}, {}, {}
+
+msg2 = generateEncoded(public_eq_list, modVal, alphdist, msg)
+msg3, msg4 = decodeMessage(msg2, privatekey, modVal, alphdist)
+
+print("Original Message ".. dump(msg))
+print("\n\nEncoded Message : V+X+Y+Z = sum (mod "..modVal..") ".. dump(msg2))
+print("\n\nDecoded Message w/ Err: ".. dump(msg4))
+print("\n\nDecoded Message w/out Err: ".. dump(msg3))
